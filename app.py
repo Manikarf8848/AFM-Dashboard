@@ -488,35 +488,45 @@ if uploaded_files:
     # ── Tab: Leaderboard ──────────────────────────────────────────────────────
     
 # ── Tab: Leaderboard ──────────────────────────────────────────────────────
+    # ── Tab: Leaderboard ──────────────────────────────────────────────────────
     with tab["🏆 Leaderboard"]:
-        st.markdown('<div class="sec-title">Filter Leaderboard</div>', unsafe_allow_html=True)
 
-        all_lb_resolvers = sorted(fdf["Resolver"].unique().tolist())
+        all_lb_resolvers  = sorted(fdf["Resolver"].unique().tolist())
+        all_lb_andon_types = sorted(fdf["Andon Type"].dropna().unique().tolist())
 
-        col_show, col_hide = st.columns([1, 1])
-        with col_show:
-            selected_resolvers = st.multiselect(
-                "✅ Show only these resolvers (leave empty = show all)",
-                options=all_lb_resolvers,
-                default=[],
-                key="lb_show"
-            )
-        with col_hide:
+        fc1, fc2, fc3 = st.columns(3)
+        with fc1:
             hidden_resolvers = st.multiselect(
-                "🚫 Hide these resolvers",
+                "🙈 Hide Resolvers",
                 options=all_lb_resolvers,
                 default=["System"] if "System" in all_lb_resolvers else [],
                 key="lb_hide"
             )
+        with fc2:
+            selected_resolvers = st.multiselect(
+                "👁️ Show Only These Resolvers",
+                options=all_lb_resolvers,
+                default=[],
+                key="lb_show"
+            )
+        with fc3:
+            selected_andon_types = st.multiselect(
+                "☑️ Filter Andon Types",
+                options=all_lb_andon_types,
+                default=[],
+                key="lb_andon"
+            )
 
         lb_fdf = fdf.copy()
-        if selected_resolvers:
-            lb_fdf = lb_fdf[lb_fdf["Resolver"].isin(selected_resolvers)]
         if hidden_resolvers:
             lb_fdf = lb_fdf[~lb_fdf["Resolver"].isin(hidden_resolvers)]
+        if selected_resolvers:
+            lb_fdf = lb_fdf[lb_fdf["Resolver"].isin(selected_resolvers)]
+        if selected_andon_types:
+            lb_fdf = lb_fdf[lb_fdf["Andon Type"].isin(selected_andon_types)]
 
         if lb_fdf.empty:
-            st.warning("No resolvers match your filter. Please adjust your selection.")
+            st.warning("No data matches your leaderboard filters. Please adjust your selection.")
             st.stop()
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -537,9 +547,9 @@ if uploaded_files:
         lb.index += 1
         lb.index.name = "Rank"
 
-        fastest      = lb.iloc[0]["Resolver"]
-        most_active  = lb.nlargest(1, "Total_Andons").iloc[0]["Resolver"]
-        most_eff     = lb.nlargest(1, "Efficiency").iloc[0]["Resolver"]
+        fastest     = lb.iloc[0]["Resolver"]
+        most_active = lb.nlargest(1, "Total_Andons").iloc[0]["Resolver"]
+        most_eff    = lb.nlargest(1, "Efficiency").iloc[0]["Resolver"]
 
         def assign_badge(r):
             badges = []
@@ -551,10 +561,9 @@ if uploaded_files:
         lb["Badge"] = lb["Resolver"].apply(assign_badge)
 
         def flag_slow(row):
-            t = get_threshold(None)
-            if row["Avg_Time"] > (t or DEFAULT_THRESHOLD) * 1.5:
+            if row["Avg_Time"] > DEFAULT_THRESHOLD * 1.5:
                 return "🚨 Slow"
-            elif row["Avg_Time"] > (t or DEFAULT_THRESHOLD):
+            elif row["Avg_Time"] > DEFAULT_THRESHOLD:
                 return "⚠️ Above target"
             return "✅ On target"
 
@@ -591,18 +600,24 @@ if uploaded_files:
                     s.loc[idx, "Badge"] = "background-color: #fef3c7; font-weight:700"
             return s
 
-        display_lb = lb[["Resolver", "Total_Andons", "Avg_Time", "Efficiency", "Within_Threshold", "Badge", "Status"]]
+        display_lb = lb[["Resolver", "Total_Andons", "Avg_Time", "Efficiency", "Within_Threshold", "Badge", "Status"]].copy()
         display_lb.columns = ["Resolver", "Total Andons", "Avg Time (min)", "Efficiency Score", "% Within Threshold", "Badge", "Status"]
-        st.dataframe(display_lb.style.apply(style_lb, axis=None)
-                     .format({"Avg Time (min)": "{:.2f}", "Efficiency Score": "{:.2f}", "% Within Threshold": "{:.1f}%"}),
-                     use_container_width=True, height=450)
+        st.dataframe(
+            display_lb.style.apply(style_lb, axis=None)
+                .format({"Avg Time (min)": "{:.2f}", "Efficiency Score": "{:.2f}", "% Within Threshold": "{:.1f}%"}),
+            use_container_width=True, height=450
+        )
 
         st.markdown('<div class="sec-title">Avg Resolve Time vs Target</div>', unsafe_allow_html=True)
         fig_lb = go.Figure()
         fig_lb.add_trace(go.Bar(
             x=lb["Resolver"], y=lb["Avg_Time"],
-            marker_color=["rgb(210,40,40)" if "🚨" in s else "rgb(255,140,0)" if "⚠️" in s else "rgb(60,180,60)"
-                          for s in lb["Status"]],
+            marker_color=[
+                "rgb(210,40,40)" if "🚨" in s
+                else "rgb(255,140,0)" if "⚠️" in s
+                else "rgb(60,180,60)"
+                for s in lb["Status"]
+            ],
             text=lb["Avg_Time"].round(2), textposition="outside", name="Avg Time"
         ))
         fig_lb.add_hline(y=DEFAULT_THRESHOLD, line_dash="dash", line_color="gray",
