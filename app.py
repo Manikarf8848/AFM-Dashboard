@@ -561,27 +561,20 @@ if uploaded_files:
         },
     }
 
-   if "show_help" not in st.session_state:
+    if "show_help" not in st.session_state:
         st.session_state.show_help = False
 
-    # ── Help button row ───────────────────────────────────────────────────────
     btn_col, spacer = st.columns([2, 10])
     with btn_col:
         btn_label = "❓ Help  ▼" if not st.session_state.show_help else "❓ Help  ▲"
-        if st.button(btn_label, use_container_width=True, key="help_btn",
-                     type="secondary"):
+        if st.button(btn_label, use_container_width=True, key="help_btn", type="secondary"):
             st.session_state.show_help = not st.session_state.show_help
 
     if st.session_state.show_help:
         st.markdown(f"""
-        <div style="
-            background:{_card};
-            border:1.5px solid {_accent};
-            border-radius:14px;
-            padding:20px 24px 16px 24px;
-            margin-bottom:1rem;
-            box-shadow: 0 8px 32px rgba(57,73,171,0.18);
-        ">
+        <div style="background:{_card}; border:1.5px solid {_accent}; border-radius:14px;
+                    padding:20px 24px 16px 24px; margin-bottom:1rem;
+                    box-shadow: 0 8px 32px rgba(57,73,171,0.18);">
             <div style="font-size:1.05rem; font-weight:800; color:{_text}; margin-bottom:4px;">
                 📖 Tab Guide — What does each tab do?
             </div>
@@ -619,14 +612,9 @@ if uploaded_files:
                     name = keys[i + j]
                     info = results[name]
                     col.markdown(f"""
-                    <div style="
-                        background:{_bg2};
-                        border-left:4px solid {_accent};
-                        border-radius:8px;
-                        padding:12px 16px;
-                        margin-bottom:10px;
-                        min-height:110px;
-                    ">
+                    <div style="background:{_bg2}; border-left:4px solid {_accent};
+                                border-radius:8px; padding:12px 16px; margin-bottom:10px;
+                                min-height:110px;">
                         <div style="font-size:0.75rem; font-weight:800; color:{_accent};
                                     text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
                             {info['icon']} {name}
@@ -646,16 +634,14 @@ if uploaded_files:
                 st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-tabs = st.tabs(tab_names)
+
+    tabs = st.tabs(tab_names)
     tab = {n: t for n, t in zip(tab_names, tabs)}
 
     # ── Tab: Leaderboard ──────────────────────────────────────────────────────
-    
-# ── Tab: Leaderboard ──────────────────────────────────────────────────────
-    # ── Tab: Leaderboard ──────────────────────────────────────────────────────
     with tab["🏆 Leaderboard"]:
 
-        all_lb_resolvers  = sorted(fdf["Resolver"].unique().tolist())
+        all_lb_resolvers   = sorted(fdf["Resolver"].unique().tolist())
         all_lb_andon_types = sorted(fdf["Andon Type"].dropna().unique().tolist())
 
         fc1, fc2, fc3 = st.columns(3)
@@ -789,6 +775,7 @@ tabs = st.tabs(tab_names)
         fig_lb.update_layout(height=400, xaxis_title="", yaxis_title="Avg Dwell Time (min)",
                              margin=dict(t=30, b=40, l=0, r=0))
         st.plotly_chart(fig_lb, use_container_width=True)
+
     # ── Tab: AFM Profile ──────────────────────────────────────────────────────
     with tab["👤 AFM Profile"]:
         st.markdown('<div class="sec-title">AFM Resolver Profile — Drill Down</div>', unsafe_allow_html=True)
@@ -803,7 +790,7 @@ tabs = st.tabs(tab_names)
         p_within  = pdf.apply(within_threshold, axis=1).mean() * 100
         p_eff     = p_total / p_avg if p_avg > 0 else 0
 
-        daily_p  = pdf.groupby("Date")["Resolve_Min"].agg(Count="count", Avg="mean").reset_index()
+        daily_p   = pdf.groupby("Date")["Resolve_Min"].agg(Count="count", Avg="mean").reset_index()
         best_day  = daily_p.nsmallest(1, "Avg").iloc[0] if not daily_p.empty else None
         worst_day = daily_p.nlargest(1, "Avg").iloc[0] if not daily_p.empty else None
 
@@ -920,7 +907,7 @@ tabs = st.tabs(tab_names)
         st.dataframe(pdf[show_cols].sort_values("Time Created", ascending=False).rename(
             columns={"Resolve_Min": "Time (min)"}), use_container_width=True, height=340)
 
-    # ── Tab: Root Cause Analysis ───────────────────────────────────────────────
+    # ── Tab: Root Cause Analysis ──────────────────────────────────────────────
     with tab["🔍 Root Cause"]:
         st.markdown('<div class="sec-title">Root Cause Analysis — Recurring Issues</div>', unsafe_allow_html=True)
 
