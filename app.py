@@ -487,21 +487,26 @@ if uploaded_files:
 
     # ── Tab: Leaderboard ──────────────────────────────────────────────────────
     with tab["🏆 Leaderboard"]:
-        lb = (fdf.groupby("Resolver")
-              .agg(Total_Andons=("Resolve_Min", "count"), Avg_Time=("Resolve_Min", "mean"))
-              .reset_index())
-        lb["Avg_Time"] = lb["Avg_Time"].round(2)
-        lb["Efficiency"] = (lb["Total_Andons"] / lb["Avg_Time"]).round(2)
-        lb["Within_Threshold"] = fdf.groupby("Resolver").apply(
-            lambda g: g.apply(within_threshold, axis=1).mean() * 100
-        ).round(1).values
-        lb = lb.sort_values("Avg_Time").reset_index(drop=True)
-        lb.index += 1
-        lb.index.name = "Rank"
+        # only resolvers visible after exclude/search filters
+    lb = (fdf.groupby("Resolver")
+          .agg(Total_Andons=("Resolve_Min", "count"), Avg_Time=("Resolve_Min", "mean"))
+          .reset_index())
+    lb["Avg_Time"] = lb["Avg_Time"].round(2)
+    lb["Efficiency"] = (lb["Total_Andons"] / lb["Avg_Time"]).round(2)
 
-        fastest      = lb.iloc[0]["Resolver"]
-        most_active  = lb.nlargest(1, "Total_Andons").iloc[0]["Resolver"]
-        most_eff     = lb.nlargest(1, "Efficiency").iloc[0]["Resolver"]
+    within_map = (fdf.groupby("Resolver")
+                  .apply(lambda g: g.apply(within_threshold, axis=1).mean() * 100)
+                  .round(1).reset_index())
+    within_map.columns = ["Resolver", "Within_Threshold"]
+    lb = lb.merge(within_map, on="Resolver", how="left")
+
+    lb = lb.sort_values("Avg_Time").reset_index(drop=True)
+    lb.index += 1
+    lb.index.name = "Rank"
+
+    fastest      = lb.iloc[0]["Resolver"]
+    most_active  = lb.nlargest(1, "Total_Andons").iloc[0]["Resolver"]
+    most_eff     = lb.nlargest(1, "Efficiency").iloc[0]["Resolver"]
 
         def assign_badge(r):
             badges = []
